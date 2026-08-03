@@ -52,7 +52,7 @@ APP_BASE=/ npm run build
   | `stationBusiness` | תחנה — עסקיות | עסקיות |
   | `bit` | ביט | ביט |
   | `cash` | מזומן | מזומן |
-  | `tax` | מס | *deduction — comes off the total* |
+  | `tax` | עמלה | *deduction — comes off the total* |
   | `fuel` | דלק | *expense — never comes off the total* |
 
 - **Cash is a single field.** Everything he collects in notes goes in one place rather
@@ -61,7 +61,7 @@ APP_BASE=/ npm run build
   with 50 of tax shows 950.
 - **Tax and fuel are not interchangeable.** Tax reduces the headline number; fuel never
   does, anywhere. They are coloured differently for exactly this reason — tax violet,
-  fuel amber — and wherever tax is non-zero the UI spells out `ברוטו … · מס …` so the
+  fuel amber — and wherever tax is non-zero the UI spells out `ברוטו … · עמלה …` so the
   arithmetic is visible.
 - The payment split (מזומן / אשראי / עסקיות / ביט) is always **gross**, since it
   describes how the money arrived, not what was kept. It will not sum to the headline

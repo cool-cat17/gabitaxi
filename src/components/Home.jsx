@@ -39,7 +39,7 @@ export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntr
             </span>
             <span>·</span>
             <span className="text-tax">
-              מס <Money value={stats.tax} />
+              עמלה <Money value={stats.tax} />
             </span>
           </p>
         )}

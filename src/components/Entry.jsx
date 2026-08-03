@@ -178,7 +178,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
       <div className="rounded-3xl border-2 border-tax/40 bg-taxbg p-4">
         <h2 className="flex items-center gap-2 text-2xl font-black text-tax">
           <IconTax className="h-6 w-6" />
-          מס
+          עמלה
         </h2>
         <p className="mt-1 text-base text-tax/90">יורד מסה״כ היום</p>
         <div className="mt-3">
@@ -188,7 +188,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
             dir="ltr"
             value={form.tax}
             placeholder="0"
-            aria-label="מס"
+            aria-label="עמלה"
             onChange={(e) => set('tax')(sanitize(e.target.value))}
             onFocus={(e) => e.target.select()}
             className="h-16 w-full rounded-2xl border-2 border-tax/40 bg-card px-3 text-center text-3xl font-black text-tax outline-none placeholder:text-tax/40 focus:border-tax"
@@ -231,7 +231,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
             </span>
             <span>·</span>
             <span className="text-tax">
-              מס <Money value={liveTax} />
+              עמלה <Money value={liveTax} />
             </span>
           </p>
         )}

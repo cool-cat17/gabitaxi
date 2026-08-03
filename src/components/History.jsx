@@ -40,7 +40,7 @@ function DayBreakdown({ record, dayKey, onEdit, onDelete }) {
           <div className="flex items-center justify-between bg-taxbg px-3 py-2.5">
             <span className="flex items-center gap-2 text-lg font-bold text-tax">
               <IconTax className="h-5 w-5" />
-              מס
+              עמלה
             </span>
             <span className="text-lg font-black text-tax">
               <Money value={dayTax(record)} />
@@ -160,7 +160,7 @@ export default function History({ days, period, onPeriodChange, onEdit, onDelete
                   <span className="flex shrink-0 flex-col items-end gap-y-0.5">
                     {group.tax > 0 && (
                       <span className="font-bold text-tax">
-                        מס <Money value={group.tax} />
+                        עמלה <Money value={group.tax} />
                       </span>
                     )}
                     <span className="font-bold text-fuel">
