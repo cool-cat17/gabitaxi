@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ConfirmDialog, IconCheck, IconFuel, IconTrash, Money } from './ui.jsx'
+import { ConfirmDialog, IconCheck, IconFuel, IconTax, IconTrash, Money } from './ui.jsx'
 import { ALL_FIELDS, EARNING_FIELDS, ENTRY_SECTIONS, num } from '../lib/calc.js'
 import { addDays, todayKey, weekdayLabel } from '../lib/dates.js'
 
@@ -66,8 +66,10 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
     setSaved(false)
   }
 
-  // Live day total — earnings only, fuel excluded.
-  const liveTotal = useMemo(() => EARNING_FIELDS.reduce((sum, f) => sum + num(form[f]), 0), [form])
+  // Live day total: income less tax. Fuel is excluded from the arithmetic entirely.
+  const liveGross = useMemo(() => EARNING_FIELDS.reduce((sum, f) => sum + num(form[f]), 0), [form])
+  const liveTax = num(form.tax)
+  const liveTotal = liveGross - liveTax
 
   const handleSave = () => {
     onSave(date, Object.fromEntries(ALL_FIELDS.map((f) => [f, num(form[f])])))
@@ -172,6 +174,28 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
         )
       })}
 
+      {/* tax — the one thing that comes off the day total */}
+      <div className="rounded-3xl border-2 border-tax/40 bg-taxbg p-4">
+        <h2 className="flex items-center gap-2 text-2xl font-black text-tax">
+          <IconTax className="h-6 w-6" />
+          מס
+        </h2>
+        <p className="mt-1 text-base text-tax/90">יורד מסה״כ היום</p>
+        <div className="mt-3">
+          <input
+            type="text"
+            inputMode="decimal"
+            dir="ltr"
+            value={form.tax}
+            placeholder="0"
+            aria-label="מס"
+            onChange={(e) => set('tax')(sanitize(e.target.value))}
+            onFocus={(e) => e.target.select()}
+            className="h-16 w-full rounded-2xl border-2 border-tax/40 bg-card px-3 text-center text-3xl font-black text-tax outline-none placeholder:text-tax/40 focus:border-tax"
+          />
+        </div>
+      </div>
+
       {/* fuel — expense, styled apart and never part of the total */}
       <div className="rounded-3xl border-2 border-dashed border-fuel/40 bg-fuelbg p-4">
         <h2 className="flex items-center gap-2 text-2xl font-black text-fuel">
@@ -200,6 +224,17 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
         <p className="text-[clamp(2.25rem,12vw,3.25rem)] font-black leading-tight">
           <Money value={liveTotal} />
         </p>
+        {liveTax > 0 && (
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 text-base font-semibold text-muted">
+            <span>
+              ברוטו <Money value={liveGross} />
+            </span>
+            <span>·</span>
+            <span className="text-tax">
+              מס <Money value={liveTax} />
+            </span>
+          </p>
+        )}
       </div>
 
       <button

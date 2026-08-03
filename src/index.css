@@ -20,6 +20,10 @@
   --color-bit: #0a7c73;
   --color-cash: #157a47;
 
+  /* deduction — quiet violet, because it reduces the headline number */
+  --color-tax: #6a4fb0;
+  --color-taxbg: #f1edfa;
+
   /* expense — its own warm tint, so it never reads as a muddy grey on white */
   --color-fuel: #a86200;
   --color-fuelbg: #fdf1dc;

@@ -1,7 +1,7 @@
 import { ALL_FIELDS, num } from './calc.js'
 
 export const STORAGE_KEY = 'taxi-log-v1'
-export const SCHEMA_VERSION = 2
+export const SCHEMA_VERSION = 3
 
 const DEFAULT_STATE = {
   version: SCHEMA_VERSION,

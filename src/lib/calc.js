@@ -37,7 +37,12 @@ export const ENTRY_SECTIONS = [
 ]
 
 export const EARNING_FIELDS = FIELDS.map((f) => f.key)
-export const ALL_FIELDS = [...EARNING_FIELDS, 'fuel']
+
+/**
+ * `tax` and `fuel` are the two non-income fields, and they behave differently:
+ * tax is deducted from the day total, fuel never is.
+ */
+export const ALL_FIELDS = [...EARNING_FIELDS, 'tax', 'fuel']
 
 /** Payment categories, for the split card and the history summaries. */
 export const CREDIT_FIELDS = ['gettCredit', 'yangoCredit', 'stationCredit']
@@ -51,8 +56,13 @@ export function num(value) {
 
 const sum = (record, fields) => fields.reduce((acc, f) => acc + num(record?.[f]), 0)
 
-/** Earnings only — fuel is never subtracted, anywhere. */
-export const dayEarnings = (record) => sum(record, EARNING_FIELDS)
+/** What came in, before the tax deduction. */
+export const dayGross = (record) => sum(record, EARNING_FIELDS)
+export const dayTax = (record) => num(record?.tax)
+
+/** The day total: income less tax. Fuel is never subtracted, anywhere. */
+export const dayEarnings = (record) => dayGross(record) - dayTax(record)
+
 export const dayCash = (record) => num(record?.cash)
 export const dayCredit = (record) => sum(record, CREDIT_FIELDS)
 export const dayBusiness = (record) => num(record?.stationBusiness)
@@ -63,6 +73,8 @@ export const dayFuel = (record) => num(record?.fuel)
 export function totals(records) {
   return records.reduce(
     (acc, r) => ({
+      gross: acc.gross + dayGross(r),
+      tax: acc.tax + dayTax(r),
       earnings: acc.earnings + dayEarnings(r),
       cash: acc.cash + dayCash(r),
       credit: acc.credit + dayCredit(r),
@@ -71,11 +83,11 @@ export function totals(records) {
       fuel: acc.fuel + dayFuel(r),
       days: acc.days + 1,
     }),
-    { earnings: 0, cash: 0, credit: 0, business: 0, bit: 0, fuel: 0, days: 0 },
+    { gross: 0, tax: 0, earnings: 0, cash: 0, credit: 0, business: 0, bit: 0, fuel: 0, days: 0 },
   )
 }
 
-/** The four payment categories of a totals object, for compact summaries. */
+/** The four payment categories of a totals object — always gross, before tax. */
 export function splitOf(t) {
   return [
     { key: 'cash', label: 'מזומן', value: t.cash },

@@ -31,6 +31,18 @@ export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntr
           {stats.days > 0 && <span>·</span>}
           {stats.days > 0 && <span>{stats.days === 1 ? 'יום עבודה אחד' : `${stats.days} ימי עבודה`}</span>}
         </p>
+        {/* Show the arithmetic only when there is tax to explain. */}
+        {stats.tax > 0 && (
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 text-base font-semibold text-muted">
+            <span>
+              ברוטו <Money value={stats.gross} />
+            </span>
+            <span>·</span>
+            <span className="text-tax">
+              מס <Money value={stats.tax} />
+            </span>
+          </p>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Card, ConfirmDialog, EmptyState, IconChevron, IconFuel, IconPencil, IconTrash, Money, PeriodToggle } from './ui.jsx'
-import { FIELDS, buildGroups, dayEarnings, dayFuel, num, splitOf, totals } from '../lib/calc.js'
+import { Card, ConfirmDialog, EmptyState, IconChevron, IconFuel, IconPencil, IconTax, IconTrash, Money, PeriodToggle } from './ui.jsx'
+import { FIELDS, buildGroups, dayEarnings, dayFuel, dayGross, dayTax, num, splitOf, totals } from '../lib/calc.js'
 import { groupLabel, shortDate, weekdayLabel } from '../lib/dates.js'
 
 const DOT = {
@@ -27,6 +27,27 @@ function DayBreakdown({ record, dayKey, onEdit, onDelete }) {
           </div>
         ))}
       </div>
+
+      {/* The tax arithmetic, shown only when there is tax to explain. */}
+      {dayTax(record) > 0 && (
+        <div className="divide-y divide-line overflow-hidden rounded-2xl border border-line bg-card">
+          <div className="flex items-center justify-between px-3 py-2.5">
+            <span className="text-lg text-muted">ברוטו</span>
+            <span className="text-lg font-bold">
+              <Money value={dayGross(record)} />
+            </span>
+          </div>
+          <div className="flex items-center justify-between bg-taxbg px-3 py-2.5">
+            <span className="flex items-center gap-2 text-lg font-bold text-tax">
+              <IconTax className="h-5 w-5" />
+              מס
+            </span>
+            <span className="text-lg font-black text-tax">
+              <Money value={dayTax(record)} />
+            </span>
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-between rounded-2xl border-2 border-dashed border-fuel/40 bg-fuelbg px-3 py-3">
         <span className="flex items-center gap-2 text-lg font-bold text-fuel">
@@ -136,8 +157,15 @@ export default function History({ days, period, onPeriodChange, onEdit, onDelete
                       </span>
                     ))}
                   </span>
-                  <span className="shrink-0 font-bold text-fuel">
-                    דלק <Money value={group.fuel} />
+                  <span className="flex shrink-0 flex-col items-end gap-y-0.5">
+                    {group.tax > 0 && (
+                      <span className="font-bold text-tax">
+                        מס <Money value={group.tax} />
+                      </span>
+                    )}
+                    <span className="font-bold text-fuel">
+                      דלק <Money value={group.fuel} />
+                    </span>
                   </span>
                 </div>
               </button>

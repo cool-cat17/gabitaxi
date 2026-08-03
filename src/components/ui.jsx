@@ -69,6 +69,16 @@ export function IconFuel({ className = 'w-6 h-6' }) {
   )
 }
 
+export function IconTax({ className = 'w-6 h-6' }) {
+  return (
+    <svg {...svg({ className })}>
+      <path d="M19 5 5 19" />
+      <circle cx="7.5" cy="7.5" r="2.5" />
+      <circle cx="16.5" cy="16.5" r="2.5" />
+    </svg>
+  )
+}
+
 export function IconChevron({ open, className = 'w-6 h-6' }) {
   return (
     <svg {...svg({ className: `${className} transition-transform ${open ? 'rotate-180' : ''}` })}>

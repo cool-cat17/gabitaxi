@@ -52,16 +52,24 @@ APP_BASE=/ npm run build
   | `stationBusiness` | תחנה — עסקיות | עסקיות |
   | `bit` | ביט | ביט |
   | `cash` | מזומן | מזומן |
-  | `fuel` | דלק | *expense — not earnings* |
+  | `tax` | מס | *deduction — comes off the total* |
+  | `fuel` | דלק | *expense — never comes off the total* |
 
 - **Cash is a single field.** Everything he collects in notes goes in one place rather
   than once per app.
-- **Earnings** = the six source fields only. Fuel is tracked and shown alongside as an
-  expense and is never subtracted from earnings anywhere.
-- **Schema v1 → v2** is migrated on load (`migrateRecord` in `storage.js`): the old
-  per-app cash columns merge into `cash`, the old `stationCash` column becomes
-  `stationBusiness`, and `bit` starts at 0. Day totals are preserved exactly, and old
-  backup files still restore.
+- **The day total is `gross - tax`**, where gross is the six income fields. So 1000 in
+  with 50 of tax shows 950.
+- **Tax and fuel are not interchangeable.** Tax reduces the headline number; fuel never
+  does, anywhere. They are coloured differently for exactly this reason — tax violet,
+  fuel amber — and wherever tax is non-zero the UI spells out `ברוטו … · מס …` so the
+  arithmetic is visible.
+- The payment split (מזומן / אשראי / עסקיות / ביט) is always **gross**, since it
+  describes how the money arrived, not what was kept. It will not sum to the headline
+  number on days with tax.
+- **Migrations run on load** (`migrateRecord` in `storage.js`). v1 → v2: per-app cash
+  columns merge into `cash`, `stationCash` becomes `stationBusiness`, `bit` starts at 0.
+  v2 → v3: `tax` defaults to 0. Day totals are preserved exactly and old backup files
+  still restore.
 - **Weeks** run Sunday–Saturday (Israeli week) and are identified by their Sunday's date key.
 - **Months** group on the `YYYY-MM` prefix of the date key.
 - Date handling is local-time and string-based throughout — no UTC conversion, so a day
