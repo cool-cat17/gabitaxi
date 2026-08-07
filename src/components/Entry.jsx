@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ConfirmDialog, IconCheck, IconFuel, IconTax, IconTrash, Money } from './ui.jsx'
-import { ALL_FIELDS, EARNING_FIELDS, ENTRY_SECTIONS, num } from '../lib/calc.js'
+import { ALL_FIELDS, EARNING_FIELDS, ENTRY_SECTIONS, num, sanitizeAmount as sanitize } from '../lib/calc.js'
 import { addDays, todayKey, weekdayLabel } from '../lib/dates.js'
 
 /** Static class names per source so Tailwind can see them at build time. */
@@ -13,14 +13,6 @@ const ACCENT = {
 }
 
 const emptyForm = () => Object.fromEntries(ALL_FIELDS.map((f) => [f, '']))
-
-/** Digits plus a single decimal point; a typed comma becomes a point. */
-function sanitize(value) {
-  let s = String(value).replace(/,/g, '.').replace(/[^0-9.]/g, '')
-  const first = s.indexOf('.')
-  if (first !== -1) s = s.slice(0, first + 1) + s.slice(first + 1).replace(/\./g, '')
-  return s
-}
 
 function toForm(record) {
   if (!record) return emptyForm()

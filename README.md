@@ -68,8 +68,33 @@ APP_BASE=/ npm run build
   number on days with tax.
 - **Migrations run on load** (`migrateRecord` in `storage.js`). v1 → v2: per-app cash
   columns merge into `cash`, `stationCash` becomes `stationBusiness`, `bit` starts at 0.
-  v2 → v3: `tax` defaults to 0. Day totals are preserved exactly and old backup files
-  still restore.
+  v2 → v3: `tax` defaults to 0. v3 → v4: empty `reports` / `monthlyReports` maps.
+  Day totals are preserved exactly and old backup files still restore.
+
+## מע״מ (the מדווח tab)
+
+Reporting an amount **never adds income** — that money was already logged in `days`.
+Only the 18% comes off. So the two live in separate maps, which also stops a reported
+amount creating a phantom ₪0 workday in the history:
+
+```
+reports:        { 'YYYY-MM-DD': amount }   // one per date, from the מדווח tab
+monthlyReports: { 'YYYY-MM':    amount }   // the once-a-month amount, one per month
+```
+
+```
+base     = (reported days in the month) + (that month's once-a-month amount)
+מע״מ     = base × 18%          // VAT_RATE, rounded to agorot
+אחרי מע״מ = month earnings − מע״מ
+```
+
+The **אחרי מע״מ** card on the home screen is month-only by design and is hidden in
+שבוע view: מע״מ is filed per calendar month, and the once-a-month amount would have to
+be either counted in every week (4–5× over) or split arbitrarily. Weekly earnings are
+still shown as normal — only the after-VAT line is monthly.
+
+`0.18` is not exact in binary, so `vatOn` rounds to two decimals; without it, 18% of 100
+displays as `18.000000000000004`.
 - **Weeks** run Sunday–Saturday (Israeli week) and are identified by their Sunday's date key.
 - **Months** group on the `YYYY-MM` prefix of the date key.
 - Date handling is local-time and string-based throughout — no UTC conversion, so a day

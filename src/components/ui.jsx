@@ -69,6 +69,16 @@ export function IconFuel({ className = 'w-6 h-6' }) {
   )
 }
 
+export function IconReport({ className = 'w-7 h-7' }) {
+  return (
+    <svg {...svg({ className })}>
+      <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" />
+      <path d="M14 3v5h5" />
+      <path d="M9 13h6M9 17h4" />
+    </svg>
+  )
+}
+
 export function IconTax({ className = 'w-6 h-6' }) {
   return (
     <svg {...svg({ className })}>
@@ -249,6 +259,23 @@ export function ConfirmDialog({ open, title, message, confirmLabel = 'כן, למ
         </div>
       </div>
     </div>
+  )
+}
+
+/** The big thumb-friendly number box used by every amount field in the app. */
+export function AmountInput({ value, onChange, label, accent = 'focus:border-taxi', className = '' }) {
+  return (
+    <input
+      type="text"
+      inputMode="decimal"
+      dir="ltr"
+      value={value}
+      placeholder="0"
+      aria-label={label}
+      onChange={(e) => onChange(e.target.value)}
+      onFocus={(e) => e.target.select()}
+      className={`h-16 w-full rounded-2xl border-2 border-line bg-page px-3 text-center text-3xl font-black text-text outline-none placeholder:text-muted/50 ${accent} ${className}`}
+    />
   )
 }
 

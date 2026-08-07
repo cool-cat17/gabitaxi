@@ -1,11 +1,13 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, EmptyState, IconChevron, IconFuel, Money, PeriodToggle } from './ui.jsx'
+import MonthlyAmount from './MonthlyAmount.jsx'
 import { currentMonthKey, currentWeekKey, monthLabel, shortDate, todayKey, weekRangeLabel, weekdayLabel } from '../lib/dates.js'
-import { dayEarnings, dayFuel, sortedKeys, splitOf, totalsForGroup } from '../lib/calc.js'
+import { VAT_RATE, dayEarnings, dayFuel, sortedKeys, splitOf, totalsForGroup, vatForMonth } from '../lib/calc.js'
 
 const RECENT_COUNT = 7
 
-export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntry }) {
+export default function Home({ days, reports, monthlyReports, period, onPeriodChange, onOpenDay, onGoEntry, onSaveMonthly }) {
+  const [monthlyOpen, setMonthlyOpen] = useState(false)
   const today = todayKey()
   const groupKey = period === 'week' ? currentWeekKey() : currentMonthKey()
 
@@ -15,6 +17,14 @@ export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntr
 
   const isWeek = period === 'week'
   const hasData = Object.keys(days).length > 0
+
+  // מע״מ is a monthly filing, so this card is month-only by design.
+  const monthKey = currentMonthKey()
+  const monthStats = useMemo(() => totalsForGroup(days, monthKey, 'month'), [days, monthKey])
+  const vat = useMemo(
+    () => vatForMonth({ reports, monthlyReports, monthKey, earnings: monthStats.earnings }),
+    [reports, monthlyReports, monthKey, monthStats.earnings],
+  )
 
   return (
     <div className="space-y-4">
@@ -44,6 +54,35 @@ export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntr
           </p>
         )}
       </div>
+
+      {/* אחרי מע״מ — always the calendar month, because מע״מ is filed monthly. */}
+      {!isWeek && (
+        <div className="rounded-3xl border-2 border-tax/40 bg-taxbg p-4">
+          <p className="text-lg font-semibold text-tax">אחרי מע״מ — {monthLabel(monthKey)}</p>
+          <p className="mt-1 text-[clamp(2rem,11vw,2.75rem)] font-black leading-tight">
+            <Money value={vat.afterVat} />
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-2 text-base font-semibold text-muted">
+            <span>
+              מדווח <Money value={vat.base} />
+            </span>
+            <span>·</span>
+            <span className="text-tax">
+              מע״מ {Math.round(VAT_RATE * 100)}% <Money value={vat.vat} />
+            </span>
+          </p>
+          <button
+            type="button"
+            onClick={() => setMonthlyOpen(true)}
+            className="mt-3 flex h-14 w-full items-center justify-between rounded-2xl border border-tax/30 bg-card px-4 text-lg font-bold active:bg-card2"
+          >
+            <span>סכום חודשי</span>
+            <span className="text-tax">
+              {vat.monthly > 0 ? <Money value={vat.monthly} /> : 'להזנה'}
+            </span>
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-3">
         <Card className="p-4">
@@ -117,6 +156,14 @@ export default function Home({ days, period, onPeriodChange, onOpenDay, onGoEntr
           <EmptyState title="אין עדיין נתונים — הזן את היום הראשון שלך" action="להזנת יום" onAction={onGoEntry} />
         )}
       </div>
+
+      <MonthlyAmount
+        open={monthlyOpen}
+        onClose={() => setMonthlyOpen(false)}
+        monthKey={monthKey}
+        value={vat.monthly}
+        onSave={onSaveMonthly}
+      />
     </div>
   )
 }

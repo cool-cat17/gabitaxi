@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Home from './components/Home.jsx'
 import Entry from './components/Entry.jsx'
+import Reported from './components/Reported.jsx'
 import History from './components/History.jsx'
 import Settings from './components/Settings.jsx'
-import { IconEntry, IconGear, IconHistory, IconHome } from './components/ui.jsx'
+import { IconEntry, IconGear, IconHistory, IconHome, IconReport } from './components/ui.jsx'
 import { loadState, saveState } from './lib/storage.js'
 import { todayKey } from './lib/dates.js'
 
+// `label` is the full page name; `short` is what fits in a four-up bottom bar.
 const TABS = [
-  { key: 'home', label: 'בית', Icon: IconHome },
-  { key: 'entry', label: 'הזנה יומית', Icon: IconEntry },
-  { key: 'history', label: 'היסטוריה', Icon: IconHistory },
+  { key: 'home', label: 'בית', short: 'בית', Icon: IconHome },
+  { key: 'entry', label: 'הזנה יומית', short: 'הזנה', Icon: IconEntry },
+  { key: 'reported', label: 'מדווח', short: 'מדווח', Icon: IconReport },
+  { key: 'history', label: 'היסטוריה', short: 'היסטוריה', Icon: IconHistory },
 ]
 
 export default function App() {
@@ -42,6 +45,33 @@ export default function App() {
       const days = { ...s.days }
       delete days[dateKey]
       return { ...s, days }
+    })
+  }, [])
+
+  // A zero report is the same as no report, so saving 0 removes the entry.
+  const saveReport = useCallback((dateKey, amount) => {
+    setState((s) => {
+      const reports = { ...s.reports }
+      if (amount > 0) reports[dateKey] = amount
+      else delete reports[dateKey]
+      return { ...s, reports }
+    })
+  }, [])
+
+  const deleteReport = useCallback((dateKey) => {
+    setState((s) => {
+      const reports = { ...s.reports }
+      delete reports[dateKey]
+      return { ...s, reports }
+    })
+  }, [])
+
+  const saveMonthlyReport = useCallback((monthKey, amount) => {
+    setState((s) => {
+      const monthlyReports = { ...s.monthlyReports }
+      if (amount > 0) monthlyReports[monthKey] = amount
+      else delete monthlyReports[monthKey]
+      return { ...s, monthlyReports }
     })
   }, [])
 
@@ -81,10 +111,24 @@ export default function App() {
         {tab === 'home' && (
           <Home
             days={state.days}
+            reports={state.reports}
+            monthlyReports={state.monthlyReports}
             period={state.settings.period}
             onPeriodChange={setPeriod}
             onOpenDay={editDay}
             onGoEntry={goEntry}
+            onSaveMonthly={saveMonthlyReport}
+          />
+        )}
+        {tab === 'reported' && (
+          <Reported
+            reports={state.reports}
+            monthlyReports={state.monthlyReports}
+            date={entryDate}
+            onDateChange={setEntryDate}
+            onSave={saveReport}
+            onDelete={deleteReport}
+            onSaveMonthly={saveMonthlyReport}
           />
         )}
         {tab === 'entry' && (
@@ -108,8 +152,8 @@ export default function App() {
         )}
       </main>
 
-      <nav className="safe-bottom grid shrink-0 grid-cols-3 gap-1 border-t border-line bg-card px-2 pt-2">
-        {TABS.map(({ key, label, Icon }) => {
+      <nav className="safe-bottom grid shrink-0 grid-cols-4 gap-1 border-t border-line bg-card px-1.5 pt-2">
+        {TABS.map(({ key, short, Icon }) => {
           const active = tab === key
           return (
             <button
@@ -117,12 +161,12 @@ export default function App() {
               type="button"
               onClick={() => setTab(key)}
               aria-current={active ? 'page' : undefined}
-              className={`flex h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl text-base font-bold ${
+              className={`flex h-[4.25rem] flex-col items-center justify-center gap-1 rounded-2xl text-sm font-bold ${
                 active ? 'bg-taxi/30 text-text' : 'text-muted active:bg-card2'
               }`}
             >
-              <Icon className="h-7 w-7" />
-              {label}
+              <Icon className="h-6 w-6" />
+              {short}
             </button>
           )
         })}

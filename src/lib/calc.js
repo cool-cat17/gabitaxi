@@ -54,6 +54,44 @@ export function num(value) {
   return Number.isFinite(n) ? n : 0
 }
 
+/** Digits plus a single decimal point; a typed comma becomes a point. */
+export function sanitizeAmount(value) {
+  let s = String(value).replace(/,/g, '.').replace(/[^0-9.]/g, '')
+  const first = s.indexOf('.')
+  if (first !== -1) s = s.slice(0, first + 1) + s.slice(first + 1).replace(/\./g, '')
+  return s
+}
+
+/* ---------- מע״מ ---------- */
+
+export const VAT_RATE = 0.18
+
+/** 0.18 is not exact in binary, so round to agorot or sums drift visibly. */
+const round2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100
+
+export const vatOn = (amount) => round2(num(amount) * VAT_RATE)
+
+/** Sum of the daily reported amounts that fall inside one calendar month. */
+export function reportedInMonth(reports, monthKey) {
+  return Object.entries(reports ?? {}).reduce(
+    (sum, [dateKey, value]) => (monthKeyOf(dateKey) === monthKey ? sum + num(value) : sum),
+    0,
+  )
+}
+
+/**
+ * מע״מ is filed per calendar month, so the whole calculation is monthly.
+ * The base is the reported days plus the once-a-month amount; neither is income
+ * — the money was already counted in `days`. Only the 18% comes off.
+ */
+export function vatForMonth({ reports, monthlyReports, monthKey, earnings = 0 }) {
+  const daily = reportedInMonth(reports, monthKey)
+  const monthly = num(monthlyReports?.[monthKey])
+  const base = round2(daily + monthly)
+  const vat = vatOn(base)
+  return { daily, monthly, base, vat, afterVat: round2(earnings - vat) }
+}
+
 const sum = (record, fields) => fields.reduce((acc, f) => acc + num(record?.[f]), 0)
 
 /** What came in, before the tax deduction. */
