@@ -40,11 +40,15 @@ export default function App() {
     setState((s) => ({ ...s, days: { ...s.days, [dateKey]: record } }))
   }, [])
 
+  // "delete this day's data" now covers the reported amount too, since both are
+  // entered on the same screen.
   const deleteDay = useCallback((dateKey) => {
     setState((s) => {
       const days = { ...s.days }
+      const reports = { ...s.reports }
       delete days[dateKey]
-      return { ...s, days }
+      delete reports[dateKey]
+      return { ...s, days, reports }
     })
   }, [])
 
@@ -54,14 +58,6 @@ export default function App() {
       const reports = { ...s.reports }
       if (amount > 0) reports[dateKey] = amount
       else delete reports[dateKey]
-      return { ...s, reports }
-    })
-  }, [])
-
-  const deleteReport = useCallback((dateKey) => {
-    setState((s) => {
-      const reports = { ...s.reports }
-      delete reports[dateKey]
       return { ...s, reports }
     })
   }, [])
@@ -124,10 +120,7 @@ export default function App() {
           <Reported
             reports={state.reports}
             monthlyReports={state.monthlyReports}
-            date={entryDate}
-            onDateChange={setEntryDate}
-            onSave={saveReport}
-            onDelete={deleteReport}
+            onEditDay={(key) => editDay(key ?? todayKey())}
             onSaveMonthly={saveMonthlyReport}
           />
         )}
@@ -135,8 +128,10 @@ export default function App() {
           <Entry
             date={entryDate}
             record={state.days[entryDate]}
+            reported={state.reports[entryDate]}
             onDateChange={setEntryDate}
             onSave={saveDay}
+            onSaveReport={saveReport}
             onDelete={deleteDay}
           />
         )}

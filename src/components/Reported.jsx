@@ -1,30 +1,18 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { AmountInput, Card, ConfirmDialog, EmptyState, IconCheck, IconTrash, Money } from './ui.jsx'
+import { useMemo, useState } from 'react'
+import { Card, EmptyState, IconChevron, Money } from './ui.jsx'
 import MonthlyAmount from './MonthlyAmount.jsx'
-import { VAT_RATE, num, sanitizeAmount, vatForMonth, vatOn } from '../lib/calc.js'
-import { addDays, monthKeyOf, monthLabel, shortDate, todayKey, weekdayLabel } from '../lib/dates.js'
+import { VAT_RATE, vatForMonth, vatOn } from '../lib/calc.js'
+import { addMonths, currentMonthKey, monthKeyOf, monthLabel, shortDate, weekdayLabel } from '../lib/dates.js'
 
-export default function Reported({ reports, monthlyReports, date, onDateChange, onSave, onDelete, onSaveMonthly }) {
-  const [draft, setDraft] = useState('')
-  const [saved, setSaved] = useState(false)
-  const [confirmDelete, setConfirmDelete] = useState(false)
+/**
+ * The מע״מ overview. Amounts are entered where the money is: the daily figure in
+ * the daily entry form, the once-a-month figure on the home screen. This tab adds
+ * them up and shows what is owed.
+ */
+export default function Reported({ reports, monthlyReports, onEditDay, onSaveMonthly }) {
+  const [monthKey, setMonthKey] = useState(currentMonthKey)
   const [monthlyOpen, setMonthlyOpen] = useState(false)
-  const savedTimer = useRef(null)
 
-  const existing = reports[date]
-
-  useEffect(() => {
-    setDraft(existing ? String(existing) : '')
-    setSaved(false)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [date])
-
-  useEffect(() => () => clearTimeout(savedTimer.current), [])
-
-  const amount = num(draft)
-  const monthKey = monthKeyOf(date)
-
-  // The summary follows the date being edited, not "now".
   const summary = useMemo(
     () => vatForMonth({ reports, monthlyReports, monthKey }),
     [reports, monthlyReports, monthKey],
@@ -38,112 +26,47 @@ export default function Reported({ reports, monthlyReports, date, onDateChange, 
     [reports, monthKey],
   )
 
-  const handleSave = () => {
-    onSave(date, amount)
-    setSaved(true)
-    clearTimeout(savedTimer.current)
-    savedTimer.current = setTimeout(() => setSaved(false), 2500)
-  }
-
-  const today = todayKey()
-  const yesterday = addDays(today, -1)
+  const isCurrent = monthKey === currentMonthKey()
 
   return (
     <div className="space-y-4">
-      {/* date */}
-      <div className="rounded-3xl border border-line bg-card p-4 shadow-sm shadow-black/5">
-        <div className="flex items-baseline justify-between gap-2">
-          <label htmlFor="report-date" className="text-lg font-semibold text-muted">
-            תאריך
-          </label>
-          <span className="text-lg font-bold">{weekdayLabel(date)}</span>
-        </div>
-        <input
-          id="report-date"
-          type="date"
-          dir="ltr"
-          value={date}
-          onChange={(e) => e.target.value && onDateChange(e.target.value)}
-          className="mt-2 h-16 w-full rounded-2xl border-2 border-line bg-page px-4 text-2xl font-bold text-text outline-none focus:border-taxi"
-        />
-        <div className="mt-3 grid grid-cols-2 gap-3">
-          <button
-            type="button"
-            onClick={() => onDateChange(today)}
-            className={`h-12 rounded-xl border text-lg font-bold ${
-              date === today ? 'border-taxi bg-taxi/25 text-text' : 'border-line bg-card2 text-muted'
-            }`}
-          >
-            היום
-          </button>
-          <button
-            type="button"
-            onClick={() => onDateChange(yesterday)}
-            className={`h-12 rounded-xl border text-lg font-bold ${
-              date === yesterday ? 'border-taxi bg-taxi/25 text-text' : 'border-line bg-card2 text-muted'
-            }`}
-          >
-            אתמול
-          </button>
-        </div>
-      </div>
-
-      {/* the amount he reports for this date */}
-      <div className="rounded-3xl border-2 border-tax/40 bg-taxbg p-4">
-        <h2 className="text-2xl font-black text-tax">סכום מדווח</h2>
-        <p className="mt-1 text-base text-tax/90">הסכום שמשלמים עליו מע״מ. לא מתווסף להכנסות.</p>
-        <div className="mt-3">
-          <AmountInput
-            value={draft}
-            onChange={(v) => {
-              setDraft(sanitizeAmount(v))
-              setSaved(false)
-            }}
-            label="סכום מדווח"
-            accent="focus:border-tax"
-            className="bg-card"
-          />
-        </div>
-        <div className="mt-3 flex items-center justify-between rounded-2xl bg-card px-4 py-3">
-          <span className="text-lg font-bold text-tax">מע״מ {Math.round(VAT_RATE * 100)}%</span>
-          <span className="text-2xl font-black text-tax">
-            <Money value={vatOn(amount)} />
-          </span>
-        </div>
-      </div>
-
-      <button
-        type="button"
-        onClick={handleSave}
-        className={`h-20 w-full rounded-3xl text-3xl font-black shadow-sm shadow-black/10 transition-colors active:scale-[0.99] ${
-          saved ? 'bg-cash text-white' : 'bg-taxi text-text'
-        }`}
-      >
-        {saved ? (
-          <span className="flex items-center justify-center gap-2">
-            <IconCheck className="h-8 w-8" />
-            נשמר!
-          </span>
-        ) : (
-          'שמור'
-        )}
-      </button>
-
-      {existing > 0 && (
+      {/* month browser */}
+      <div className="flex items-center justify-between gap-2 rounded-2xl border border-line bg-card p-2 shadow-sm shadow-black/5">
         <button
           type="button"
-          onClick={() => setConfirmDelete(true)}
-          className="flex h-16 w-full items-center justify-center gap-2 rounded-3xl border border-line bg-card text-xl font-bold text-yango active:bg-card2"
+          onClick={() => setMonthKey(addMonths(monthKey, -1))}
+          aria-label="חודש קודם"
+          className="flex h-12 w-12 items-center justify-center rounded-xl bg-card2 text-muted active:bg-line"
         >
-          <IconTrash />
-          מחיקת הדיווח של יום זה
+          {/* RTL: earlier is to the right, so this arrow points right */}
+          <IconChevron className="h-6 w-6 -rotate-90" />
         </button>
-      )}
+        <span className="text-xl font-black">{monthLabel(monthKey)}</span>
+        <button
+          type="button"
+          onClick={() => setMonthKey(addMonths(monthKey, 1))}
+          aria-label="חודש הבא"
+          disabled={isCurrent}
+          className="flex h-12 w-12 items-center justify-center rounded-xl bg-card2 text-muted active:bg-line disabled:opacity-30"
+        >
+          <IconChevron className="h-6 w-6 rotate-90" />
+        </button>
+      </div>
 
-      {/* month summary */}
+      {/* what is owed */}
+      <div className="rounded-3xl border-2 border-tax/40 bg-taxbg p-5">
+        <p className="text-lg font-semibold text-tax">מע״מ לתשלום ({Math.round(VAT_RATE * 100)}%)</p>
+        <p className="mt-1 text-[clamp(2.5rem,14vw,3.5rem)] font-black leading-none text-tax">
+          <Money value={summary.vat} />
+        </p>
+        <p className="mt-2 text-base font-semibold text-muted">
+          מסה״כ מדווח של <Money value={summary.base} className="font-bold text-text" />
+        </p>
+      </div>
+
+      {/* how that total is made up */}
       <Card className="p-4">
-        <p className="text-lg font-semibold text-muted">מדווח — {monthLabel(monthKey)}</p>
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-lg text-muted">מדווח יומי</span>
             <span className="text-xl font-bold">
@@ -169,13 +92,10 @@ export default function Reported({ reports, monthlyReports, date, onDateChange, 
               <Money value={summary.base} />
             </span>
           </div>
-          <div className="flex items-center justify-between rounded-xl bg-taxbg px-3 py-2.5">
-            <span className="text-lg font-bold text-tax">מע״מ לתשלום ({Math.round(VAT_RATE * 100)}%)</span>
-            <span className="text-2xl font-black text-tax">
-              <Money value={summary.vat} />
-            </span>
-          </div>
         </div>
+        <p className="mt-3 text-base leading-relaxed text-muted">
+          את הסכום היומי מזינים במסך „הזנה״, יחד עם שאר נתוני היום.
+        </p>
       </Card>
 
       {/* the reported days of this month */}
@@ -187,26 +107,33 @@ export default function Reported({ reports, monthlyReports, date, onDateChange, 
               <button
                 key={key}
                 type="button"
-                onClick={() => onDateChange(key)}
+                onClick={() => onEditDay(key)}
                 className="flex w-full items-center justify-between gap-3 px-4 py-4 text-right active:bg-card2"
               >
                 <span className="min-w-0">
                   <span className="block text-xl font-bold">{weekdayLabel(key)}</span>
                   <span className="num block text-base text-muted">{shortDate(key)}</span>
                 </span>
-                <span className="text-left">
-                  <span className="block text-2xl font-black">
-                    <Money value={reports[key]} />
+                <span className="flex items-center gap-2">
+                  <span className="text-left">
+                    <span className="block text-2xl font-black">
+                      <Money value={reports[key]} />
+                    </span>
+                    <span className="block text-base text-tax">
+                      מע״מ <Money value={vatOn(reports[key])} />
+                    </span>
                   </span>
-                  <span className="block text-base text-tax">
-                    מע״מ <Money value={vatOn(reports[key])} />
-                  </span>
+                  <IconChevron className="h-5 w-5 rotate-90 text-muted" />
                 </span>
               </button>
             ))}
           </Card>
         ) : (
-          <EmptyState title="עדיין לא דיווחת סכומים בחודש הזה" />
+          <EmptyState
+            title="לא דיווחת סכומים בחודש הזה — אפשר להזין את הסכום היומי במסך ההזנה"
+            action="למסך ההזנה"
+            onAction={() => onEditDay(null)}
+          />
         )}
       </div>
 
@@ -216,18 +143,6 @@ export default function Reported({ reports, monthlyReports, date, onDateChange, 
         monthKey={monthKey}
         value={summary.monthly}
         onSave={onSaveMonthly}
-      />
-
-      <ConfirmDialog
-        open={confirmDelete}
-        title="למחוק את הדיווח של יום זה?"
-        message="הפעולה אינה הפיכה."
-        onConfirm={() => {
-          setConfirmDelete(false)
-          onDelete(date)
-          setDraft('')
-        }}
-        onCancel={() => setConfirmDelete(false)}
       />
     </div>
   )

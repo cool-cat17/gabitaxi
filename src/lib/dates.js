@@ -43,6 +43,13 @@ export function currentMonthKey() {
   return monthKeyOf(todayKey())
 }
 
+/** "2026-08" + 1 -> "2026-09"; handles year rollover both ways. */
+export function addMonths(monthKey, months) {
+  const [y, m] = monthKey.split('-').map(Number)
+  const d = new Date(y, m - 1 + months, 1)
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`
+}
+
 export function currentWeekKey() {
   return weekKeyOf(todayKey())
 }

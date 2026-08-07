@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ConfirmDialog, IconCheck, IconFuel, IconTax, IconTrash, Money } from './ui.jsx'
-import { ALL_FIELDS, EARNING_FIELDS, ENTRY_SECTIONS, num, sanitizeAmount as sanitize } from '../lib/calc.js'
+import { ConfirmDialog, IconCheck, IconFuel, IconReport, IconTax, IconTrash, Money } from './ui.jsx'
+import { ALL_FIELDS, EARNING_FIELDS, ENTRY_SECTIONS, VAT_RATE, num, sanitizeAmount as sanitize, vatOn } from '../lib/calc.js'
 import { addDays, todayKey, weekdayLabel } from '../lib/dates.js'
 
 /** Static class names per source so Tailwind can see them at build time. */
@@ -38,8 +38,10 @@ function Field({ label, value, onChange, focusClass, showLabel = true, className
   )
 }
 
-export default function Entry({ date, record, onDateChange, onSave, onDelete }) {
+export default function Entry({ date, record, reported, onDateChange, onSave, onSaveReport, onDelete }) {
   const [form, setForm] = useState(() => toForm(record))
+  // The reported amount is saved alongside the day but lives in its own map.
+  const [reportedDraft, setReportedDraft] = useState(() => (reported ? String(reported) : ''))
   const [saved, setSaved] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const savedTimer = useRef(null)
@@ -47,6 +49,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
   // Reload the form whenever the chosen date changes (edit-in-place per date).
   useEffect(() => {
     setForm(toForm(record))
+    setReportedDraft(reported ? String(reported) : '')
     setSaved(false)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [date])
@@ -65,6 +68,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
 
   const handleSave = () => {
     onSave(date, Object.fromEntries(ALL_FIELDS.map((f) => [f, num(form[f])])))
+    onSaveReport(date, num(reportedDraft))
     setSaved(true)
     clearTimeout(savedTimer.current)
     savedTimer.current = setTimeout(() => setSaved(false), 2500)
@@ -210,6 +214,39 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
         </div>
       </div>
 
+      {/* דיווחת — feeds the monthly מע״מ, does not touch the day total */}
+      <div className="rounded-3xl border-2 border-dashed border-tax/45 bg-taxbg p-4">
+        <h2 className="flex items-center gap-2 text-2xl font-black text-tax">
+          <IconReport className="h-6 w-6" />
+          דיווחת
+        </h2>
+        <p className="mt-1 text-base text-tax/90">הסכום שדיווחת היום למע״מ — לא משנה את סה״כ היום</p>
+        <div className="mt-3">
+          <input
+            type="text"
+            inputMode="decimal"
+            dir="ltr"
+            value={reportedDraft}
+            placeholder="0"
+            aria-label="דיווחת"
+            onChange={(e) => {
+              setReportedDraft(sanitize(e.target.value))
+              setSaved(false)
+            }}
+            onFocus={(e) => e.target.select()}
+            className="h-16 w-full rounded-2xl border-2 border-tax/40 bg-card px-3 text-center text-3xl font-black text-tax outline-none placeholder:text-tax/40 focus:border-tax"
+          />
+        </div>
+        {num(reportedDraft) > 0 && (
+          <div className="mt-3 flex items-center justify-between rounded-2xl bg-card px-4 py-3">
+            <span className="text-lg font-bold text-tax">מע״מ {Math.round(VAT_RATE * 100)}%</span>
+            <span className="text-xl font-black text-tax">
+              <Money value={vatOn(reportedDraft)} />
+            </span>
+          </div>
+        )}
+      </div>
+
       {/* live total */}
       <div className="rounded-3xl border-2 border-taxi/60 bg-hero px-5 py-4">
         <p className="text-xl font-bold text-muted">סה״כ ליום</p>
@@ -246,7 +283,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
         )}
       </button>
 
-      {record && (
+      {(record || reported > 0) && (
         <button
           type="button"
           onClick={() => setConfirmDelete(true)}
@@ -265,6 +302,7 @@ export default function Entry({ date, record, onDateChange, onSave, onDelete }) 
           setConfirmDelete(false)
           onDelete(date)
           setForm(emptyForm())
+          setReportedDraft('')
         }}
         onCancel={() => setConfirmDelete(false)}
       />

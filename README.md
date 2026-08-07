@@ -73,6 +73,15 @@ APP_BASE=/ npm run build
 
 ## מע״מ (the מדווח tab)
 
+Amounts are entered **where the money is**, not in the מדווח tab:
+
+- the **daily** figure is a `דיווחת` card on the daily entry screen, saved by the same
+  שמור button as the rest of the day;
+- the **once-a-month** figure is the `סכום חודשי` button on the home screen.
+
+The מדווח tab is the read-only overview — what is owed, how it breaks down, which days
+were reported — with a month browser so past months can be checked.
+
 Reporting an amount **never adds income** — that money was already logged in `days`.
 Only the 18% comes off. So the two live in separate maps, which also stops a reported
 amount creating a phantom ₪0 workday in the history:
