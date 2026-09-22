@@ -103,6 +103,9 @@ export const dayEarnings = (record) => dayGross(record) - dayTax(record)
 
 export const dayCash = (record) => num(record?.cash)
 export const dayCredit = (record) => sum(record, CREDIT_FIELDS)
+export const dayGettCredit = (record) => num(record?.gettCredit)
+export const dayYangoCredit = (record) => num(record?.yangoCredit)
+export const dayStationCredit = (record) => num(record?.stationCredit)
 export const dayBusiness = (record) => num(record?.stationBusiness)
 export const dayBit = (record) => num(record?.bit)
 export const dayFuel = (record) => num(record?.fuel)
@@ -116,20 +119,38 @@ export function totals(records) {
       earnings: acc.earnings + dayEarnings(r),
       cash: acc.cash + dayCash(r),
       credit: acc.credit + dayCredit(r),
+      gettCredit: acc.gettCredit + dayGettCredit(r),
+      yangoCredit: acc.yangoCredit + dayYangoCredit(r),
+      stationCredit: acc.stationCredit + dayStationCredit(r),
       business: acc.business + dayBusiness(r),
       bit: acc.bit + dayBit(r),
       fuel: acc.fuel + dayFuel(r),
       days: acc.days + 1,
     }),
-    { gross: 0, tax: 0, earnings: 0, cash: 0, credit: 0, business: 0, bit: 0, fuel: 0, days: 0 },
+    {
+      gross: 0,
+      tax: 0,
+      earnings: 0,
+      cash: 0,
+      credit: 0,
+      gettCredit: 0,
+      yangoCredit: 0,
+      stationCredit: 0,
+      business: 0,
+      bit: 0,
+      fuel: 0,
+      days: 0,
+    },
   )
 }
 
-/** The four payment categories of a totals object — always gross, before tax. */
+/** The payment categories of a totals object — always gross, before tax. Get and Yango credit are shown separately, never merged. */
 export function splitOf(t) {
   return [
     { key: 'cash', label: 'מזומן', value: t.cash },
-    { key: 'credit', label: 'אשראי', value: t.credit },
+    { key: 'gettCredit', label: 'גט — אשראי', value: t.gettCredit },
+    { key: 'yangoCredit', label: 'יאנגו — אשראי', value: t.yangoCredit },
+    { key: 'stationCredit', label: 'תחנה — אשראי', value: t.stationCredit },
     { key: 'business', label: 'עסקיות', value: t.business },
     { key: 'bit', label: 'ביט', value: t.bit },
   ]

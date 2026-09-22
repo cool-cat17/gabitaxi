@@ -110,7 +110,7 @@ export default function Home({ days, reports, monthlyReports, period, onPeriodCh
       <Card className="p-4">
         <p className="text-lg font-semibold text-muted">איך קיבלת {isWeek ? 'השבוע' : 'החודש'}</p>
         <div className="mt-3 grid grid-cols-2 gap-x-4 gap-y-3">
-          {splitOf(stats).map((part) => (
+          {splitOf(stats).filter((part) => part.value > 0).map((part) => (
             <div key={part.key}>
               <p className="text-base text-muted">{part.label}</p>
               <p className="text-2xl font-black">
