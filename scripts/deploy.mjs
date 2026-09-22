@@ -1,44 +1,75 @@
 /**
  * Publish dist/ to the gh-pages branch.
  *
- * dist/ is gitignored in the source branch, so this makes a throwaway repo inside
- * it and force-pushes that single commit to gh-pages. The branch only ever holds
- * the current build — no history to prune.
+ * Uses a git worktree so each deploy is an ordinary commit on top of the previous
+ * one. An earlier version force-pushed a fresh root commit every time; GitHub Pages
+ * does not reliably rebuild when the branch history is rewritten underneath it, so
+ * deploys silently kept serving the old build.
  *
  * Usage: npm run deploy   (runs the production build first)
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, rmSync, writeFileSync } from 'node:fs'
+import { cpSync, existsSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const dist = path.join(root, 'dist')
+const work = path.join(root, '.deploy')
 
 if (!existsSync(path.join(dist, 'index.html'))) {
   console.error('dist/index.html is missing — run `npm run build` first.')
   process.exit(1)
 }
 
-const git = (args, cwd = dist) => execFileSync('git', args, { cwd, stdio: 'inherit' })
-const gitOut = (args, cwd = root) => execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+const git = (args, opts = {}) => execFileSync('git', args, { cwd: root, stdio: 'inherit', ...opts })
+const gitOut = (args) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim()
+const tryGit = (args) => {
+  try {
+    execFileSync('git', args, { cwd: root, stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+}
 
-const remote = gitOut(['remote', 'get-url', 'origin'])
 const sha = gitOut(['rev-parse', '--short', 'HEAD'])
 
-// Tell GitHub Pages not to run the output through Jekyll.
-writeFileSync(path.join(dist, '.nojekyll'), '')
+// Start from a clean worktree every run.
+if (existsSync(work)) {
+  tryGit(['worktree', 'remove', work, '--force'])
+  rmSync(work, { recursive: true, force: true })
+}
+tryGit(['worktree', 'prune'])
 
-// Fresh throwaway repo each time, so reruns can't inherit stale state.
-rmSync(path.join(dist, '.git'), { recursive: true, force: true })
+const hasRemoteBranch = tryGit(['fetch', 'origin', 'gh-pages']) && tryGit(['rev-parse', '--verify', 'origin/gh-pages'])
 
-git(['init', '-q'])
-git(['checkout', '-q', '-B', 'gh-pages'])
-git(['add', '-A'])
-git(['-c', 'user.name=deploy', '-c', 'user.email=deploy@local', 'commit', '-q', '-m', `deploy ${sha}`])
-git(['push', '-q', '--force', remote, 'gh-pages'])
+if (hasRemoteBranch) {
+  git(['worktree', 'add', '-B', 'gh-pages', work, 'origin/gh-pages'])
+} else {
+  git(['worktree', 'add', '--detach', work])
+  git(['checkout', '--orphan', 'gh-pages'], { cwd: work })
+  git(['rm', '-rf', '--quiet', '.'], { cwd: work })
+}
 
-rmSync(path.join(dist, '.git'), { recursive: true, force: true })
+// Replace the published tree with the new build.
+for (const entry of readdirSync(work)) {
+  if (entry !== '.git') rmSync(path.join(work, entry), { recursive: true, force: true })
+}
+cpSync(dist, work, { recursive: true })
+writeFileSync(path.join(work, '.nojekyll'), '') // keep Pages from running Jekyll
 
+// A stamp that changes every run. Vite reuses content hashes, so a rebuild of
+// unchanged source produces an identical tree — and with nothing to commit there
+// is no push, and Pages never republishes. This guarantees a real commit.
+const stamp = `${sha} ${new Date().toISOString()}\n`
+writeFileSync(path.join(work, 'version.txt'), stamp)
+
+git(['add', '-A'], { cwd: work })
+git(['-c', 'user.name=deploy', '-c', 'user.email=deploy@local', 'commit', '-q', '-m', `deploy ${sha}`], { cwd: work })
+git(['push', '-q', 'origin', 'gh-pages'], { cwd: work })
 console.log(`\nDeployed ${sha} to gh-pages.`)
-console.log('Live at https://cool-cat17.github.io/gabitaxi/ (allow a minute on the first deploy).')
+
+git(['worktree', 'remove', work, '--force'])
+
+console.log('Live at https://cool-cat17.github.io/gabitaxi/ — Pages takes a minute to publish.')
