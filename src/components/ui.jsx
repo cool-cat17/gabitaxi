@@ -69,6 +69,16 @@ export function IconFuel({ className = 'w-6 h-6' }) {
   )
 }
 
+export function IconCup({ className = 'w-6 h-6' }) {
+  return (
+    <svg {...svg({ className })}>
+      <path d="M6 8h12l-1.5 12.5a1.5 1.5 0 0 1-1.5 1.5H9a1.5 1.5 0 0 1-1.5-1.5z" />
+      <path d="M5 8h14" />
+      <path d="M12 8 14 2h3" />
+    </svg>
+  )
+}
+
 export function IconReport({ className = 'w-7 h-7' }) {
   return (
     <svg {...svg({ className })}>

@@ -28,6 +28,10 @@
   --color-fuel: #a86200;
   --color-fuelbg: #fdf1dc;
 
+  /* small purchases (a drink, food) — rose, so it never reads as fuel or yango */
+  --color-spend: #b0306a;
+  --color-spendbg: #fcebf3;
+
   --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif;
 }
 

@@ -5,7 +5,7 @@ import Reported from './components/Reported.jsx'
 import History from './components/History.jsx'
 import Settings from './components/Settings.jsx'
 import { IconEntry, IconGear, IconHistory, IconHome, IconReport } from './components/ui.jsx'
-import { loadState, saveState } from './lib/storage.js'
+import { loadState, newExpenseId, saveState } from './lib/storage.js'
 import { todayKey } from './lib/dates.js'
 
 // `label` is the full page name; `short` is what fits in a four-up bottom bar.
@@ -71,6 +71,14 @@ export default function App() {
     })
   }, [])
 
+  const addExpense = useCallback((item) => {
+    setState((s) => ({ ...s, expenses: [...s.expenses, { ...item, id: newExpenseId() }] }))
+  }, [])
+
+  const deleteExpense = useCallback((id) => {
+    setState((s) => ({ ...s, expenses: s.expenses.filter((e) => e.id !== id) }))
+  }, [])
+
   const editDay = useCallback((dateKey) => {
     setEntryDate(dateKey)
     setTab('entry')
@@ -109,11 +117,14 @@ export default function App() {
             days={state.days}
             reports={state.reports}
             monthlyReports={state.monthlyReports}
+            expenses={state.expenses}
             period={state.settings.period}
             onPeriodChange={setPeriod}
             onOpenDay={editDay}
             onGoEntry={goEntry}
             onSaveMonthly={saveMonthlyReport}
+            onAddExpense={addExpense}
+            onDeleteExpense={deleteExpense}
           />
         )}
         {tab === 'reported' && (
@@ -138,6 +149,7 @@ export default function App() {
         {tab === 'history' && (
           <History
             days={state.days}
+            expenses={state.expenses}
             period={state.settings.period}
             onPeriodChange={setPeriod}
             onEdit={editDay}

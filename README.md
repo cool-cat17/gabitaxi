@@ -104,6 +104,13 @@ still shown as normal — only the after-VAT line is monthly.
 
 `0.18` is not exact in binary, so `vatOn` rounds to two decimals; without it, 18% of 100
 displays as `18.000000000000004`.
+## הוצאות (small purchases)
+
+The pink **הוצאות** card on the home screen adds small purchases — a drink, food,
+parking — with a name, amount and date. They live in their own list,
+`expenses: [{ id, date, name, amount }]` (schema v5), and, like fuel, they **never come
+off the earnings total**. The card and the history groups show them per week/month.
+
 - **Weeks** run Sunday–Saturday (Israeli week) and are identified by their Sunday's date key.
 - **Months** group on the `YYYY-MM` prefix of the date key.
 - Date handling is local-time and string-based throughout — no UTC conversion, so a day

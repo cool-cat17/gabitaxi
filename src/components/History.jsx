@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Card, ConfirmDialog, EmptyState, IconChevron, IconFuel, IconPencil, IconTax, IconTrash, Money, PeriodToggle } from './ui.jsx'
-import { FIELDS, buildGroups, dayEarnings, dayFuel, dayGross, dayTax, num, splitOf, totals } from '../lib/calc.js'
+import { FIELDS, buildGroups, dayEarnings, dayFuel, dayGross, dayTax, expensesInGroup, expensesTotal, num, splitOf, totals } from '../lib/calc.js'
 import { groupLabel, shortDate, weekdayLabel } from '../lib/dates.js'
 
 const DOT = {
@@ -88,7 +88,9 @@ function DayBreakdown({ record, dayKey, onEdit, onDelete }) {
   )
 }
 
-export default function History({ days, period, onPeriodChange, onEdit, onDelete, onGoEntry }) {
+const daysLabel = (n) => (n === 1 ? 'יום עבודה אחד' : `${n} ימי עבודה`)
+
+export default function History({ days, expenses, period, onPeriodChange, onEdit, onDelete, onGoEntry }) {
   const [openGroup, setOpenGroup] = useState(null)
   const [openDay, setOpenDay] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
@@ -96,6 +98,7 @@ export default function History({ days, period, onPeriodChange, onEdit, onDelete
   const allTime = useMemo(() => totals(Object.values(days)), [days])
   const groups = useMemo(() => buildGroups(days, period), [days, period])
   const hasData = groups.length > 0
+  const spentIn = (groupKey) => expensesTotal(expensesInGroup(expenses, groupKey, period))
 
   return (
     <div className="space-y-4">
@@ -137,8 +140,11 @@ export default function History({ days, period, onPeriodChange, onEdit, onDelete
                 className="w-full px-4 py-4 text-right active:bg-card2"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <span className="text-2xl font-black">
-                    {period === 'week' ? <span className="num">{label}</span> : label}
+                  <span>
+                    <span className="block text-2xl font-black">
+                      {period === 'week' ? <span className="num">{label}</span> : label}
+                    </span>
+                    <span className="block text-base font-semibold text-muted">{daysLabel(group.days)}</span>
                   </span>
                   <span className="flex items-center gap-2">
                     <span className="text-2xl font-black">
@@ -166,6 +172,11 @@ export default function History({ days, period, onPeriodChange, onEdit, onDelete
                     <span className="font-bold text-fuel">
                       דלק <Money value={group.fuel} />
                     </span>
+                    {spentIn(group.groupKey) > 0 && (
+                      <span className="font-bold text-spend">
+                        הוצאות <Money value={spentIn(group.groupKey)} />
+                      </span>
+                    )}
                   </span>
                 </div>
               </button>

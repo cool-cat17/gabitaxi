@@ -1,18 +1,25 @@
 import { ALL_FIELDS, num } from './calc.js'
 
 export const STORAGE_KEY = 'taxi-log-v1'
-export const SCHEMA_VERSION = 4
+export const SCHEMA_VERSION = 5
 
 const DEFAULT_STATE = {
   version: SCHEMA_VERSION,
   days: {},
   reports: {},
   monthlyReports: {},
+  expenses: [],
   settings: { period: 'month' },
 }
 
 const isDateKey = (k) => /^\d{4}-\d{2}-\d{2}$/.test(k)
 const isMonthKey = (k) => /^\d{4}-\d{2}$/.test(k)
+
+export const EXPENSE_NAME_MAX = 40
+
+export function newExpenseId() {
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
+}
 
 const LEGACY_KEYS = ['gettCash', 'yangoCash', 'stationCash']
 
@@ -43,7 +50,7 @@ function migrateRecord(value) {
 
 /** Coerce anything that comes out of storage (or a backup file) into our shape. */
 export function normalize(raw) {
-  const state = { version: SCHEMA_VERSION, days: {}, reports: {}, monthlyReports: {}, settings: { period: 'month' } }
+  const state = { version: SCHEMA_VERSION, days: {}, reports: {}, monthlyReports: {}, expenses: [], settings: { period: 'month' } }
   if (!raw || typeof raw !== 'object') return state
 
   const days = raw.days && typeof raw.days === 'object' ? raw.days : {}
@@ -66,6 +73,21 @@ export function normalize(raw) {
     if (isMonthKey(key) && amount !== 0) state.monthlyReports[key] = amount
   }
 
+  // Small purchases (a drink, something to eat). Like fuel, they never come off the
+  // earnings total. Every field is re-checked so a hand-edited backup can't inject junk.
+  const expenses = Array.isArray(raw.expenses) ? raw.expenses : []
+  for (const item of expenses) {
+    if (!item || typeof item !== 'object') continue
+    const amount = num(item.amount)
+    if (!isDateKey(item.date) || !(amount > 0)) continue
+    state.expenses.push({
+      id: typeof item.id === 'string' && item.id ? item.id.slice(0, 40) : newExpenseId(),
+      date: item.date,
+      name: typeof item.name === 'string' ? item.name.trim().slice(0, EXPENSE_NAME_MAX) : '',
+      amount,
+    })
+  }
+
   const period = raw.settings?.period
   if (period === 'week' || period === 'month') state.settings.period = period
 
@@ -75,10 +97,10 @@ export function normalize(raw) {
 export function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return { ...DEFAULT_STATE }
+    if (!raw) return normalize(DEFAULT_STATE)
     return normalize(JSON.parse(raw))
   } catch {
-    return { ...DEFAULT_STATE }
+    return normalize(DEFAULT_STATE)
   }
 }
 

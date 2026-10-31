@@ -189,3 +189,15 @@ export function buildGroups(days, period) {
       ...totals(dayKeys.map((k) => days[k])),
     }))
 }
+
+/* ---------- הוצאות ---------- */
+
+/** Small purchases inside one group (month key or Sunday week key), newest first. */
+export function expensesInGroup(expenses, groupKey, period) {
+  const keyOf = period === 'week' ? weekKeyOf : monthKeyOf
+  return (expenses ?? [])
+    .filter((e) => keyOf(e.date) === groupKey)
+    .sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0))
+}
+
+export const expensesTotal = (list) => (list ?? []).reduce((sum, e) => sum + num(e.amount), 0)

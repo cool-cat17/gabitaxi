@@ -1,19 +1,36 @@
 import { useMemo, useState } from 'react'
-import { Card, EmptyState, IconChevron, IconFuel, Money, PeriodToggle } from './ui.jsx'
+import { Card, EmptyState, IconChevron, IconCup, IconFuel, Money, PeriodToggle } from './ui.jsx'
 import MonthlyAmount from './MonthlyAmount.jsx'
+import Expenses from './Expenses.jsx'
 import { currentMonthKey, currentWeekKey, monthLabel, shortDate, todayKey, weekRangeLabel, weekdayLabel } from '../lib/dates.js'
-import { VAT_RATE, dayEarnings, dayFuel, sortedKeys, splitOf, totalsForGroup, vatForMonth } from '../lib/calc.js'
+import { VAT_RATE, dayEarnings, dayFuel, expensesInGroup, expensesTotal, sortedKeys, splitOf, totalsForGroup, vatForMonth } from '../lib/calc.js'
 
 const RECENT_COUNT = 7
 
-export default function Home({ days, reports, monthlyReports, period, onPeriodChange, onOpenDay, onGoEntry, onSaveMonthly }) {
+export default function Home({
+  days,
+  reports,
+  monthlyReports,
+  expenses,
+  period,
+  onPeriodChange,
+  onOpenDay,
+  onGoEntry,
+  onSaveMonthly,
+  onAddExpense,
+  onDeleteExpense,
+}) {
   const [monthlyOpen, setMonthlyOpen] = useState(false)
+  const [expensesOpen, setExpensesOpen] = useState(false)
   const today = todayKey()
   const groupKey = period === 'week' ? currentWeekKey() : currentMonthKey()
 
   const stats = useMemo(() => totalsForGroup(days, groupKey, period), [days, groupKey, period])
   const todayTotal = dayEarnings(days[today])
   const recent = useMemo(() => sortedKeys(days).slice(0, RECENT_COUNT), [days])
+
+  const periodExpenses = useMemo(() => expensesInGroup(expenses, groupKey, period), [expenses, groupKey, period])
+  const spent = expensesTotal(periodExpenses)
 
   const isWeek = period === 'week'
   const hasData = Object.keys(days).length > 0
@@ -106,6 +123,35 @@ export default function Home({ days, reports, monthlyReports, period, onPeriodCh
         </div>
       </div>
 
+      {/* Small purchases — an expense like fuel, never taken off the earnings. */}
+      <button
+        type="button"
+        onClick={() => setExpensesOpen(true)}
+        className="w-full rounded-3xl border-2 border-dashed border-spend/40 bg-spendbg p-4 text-right active:opacity-80"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <span>
+            <span className="flex items-center gap-1.5 text-lg font-semibold text-spend">
+              <IconCup className="h-5 w-5" />
+              {isWeek ? 'הוצאות השבוע' : 'הוצאות החודש'}
+            </span>
+            <span className="mt-1 block text-3xl font-black leading-tight text-spend">
+              <Money value={spent} />
+            </span>
+            <span className="mt-1 block text-base text-spend/80">
+              {periodExpenses.length === 0
+                ? 'שתייה, אוכל, חניה…'
+                : periodExpenses.length === 1
+                  ? 'פריט אחד'
+                  : `${periodExpenses.length} פריטים`}
+            </span>
+          </span>
+          <span className="flex h-14 shrink-0 items-center rounded-2xl bg-spend px-4 text-xl font-bold text-white">
+            + הוספה
+          </span>
+        </div>
+      </button>
+
       {/* How the money came in, for the selected period. */}
       <Card className="p-4">
         <p className="text-lg font-semibold text-muted">איך קיבלת {isWeek ? 'השבוע' : 'החודש'}</p>
@@ -156,6 +202,15 @@ export default function Home({ days, reports, monthlyReports, period, onPeriodCh
           <EmptyState title="אין עדיין נתונים — הזן את היום הראשון שלך" action="להזנת יום" onAction={onGoEntry} />
         )}
       </div>
+
+      <Expenses
+        open={expensesOpen}
+        onClose={() => setExpensesOpen(false)}
+        title={isWeek ? `השבוע · ${weekRangeLabel(groupKey)}` : monthLabel(groupKey)}
+        list={periodExpenses}
+        onAdd={onAddExpense}
+        onDelete={onDeleteExpense}
+      />
 
       <MonthlyAmount
         open={monthlyOpen}
